@@ -1,8 +1,17 @@
+import { useMeals } from '../context/MealContext';
+
 export default function IngredientList({ ingredients, onToggleCheck }) {
+    const { language } = useMeals();
+    const t = {
+        empty: language === 'ko' ? '아직 재료가 없습니다. 식단을 추가하여 장보기 목록을 만들어보세요!' : 'No ingredients yet. Add meals to generate your shopping list!',
+        title: language === 'ko' ? '장보기 목록' : 'Shopping List',
+        items: language === 'ko' ? '개' : 'items'
+    };
+
     if (ingredients.length === 0) {
         return (
             <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                No ingredients yet. Add meals to generate your shopping list!
+                {t.empty}
             </div>
         );
     }
@@ -10,9 +19,9 @@ export default function IngredientList({ ingredients, onToggleCheck }) {
     return (
         <div className="glass-panel rounded-2xl p-8">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-                🛒 Shopping List
+                🛒 {t.title}
                 <span className="text-sm font-bold text-blue-600 bg-white/50 px-3 py-1 rounded-full shadow-sm">
-                    {ingredients.length} items
+                    {ingredients.length} {t.items}
                 </span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
