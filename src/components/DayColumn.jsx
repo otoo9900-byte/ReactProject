@@ -20,34 +20,48 @@ export default function DayColumn({ day, meals, onUpdateMeal }) {
     const displayDay = language === 'ko' ? dayMap[day] : day;
 
     return (
-        <div className="flex flex-col gap-3 min-w-[180px]">
-            <h3 className="font-bold text-center py-3 rounded-xl glass-panel text-white tracking-wide shadow-sm">
-                {displayDay}
-            </h3>
-            <div className="flex flex-col gap-3">
-                <div className="text-[10px] font-bold text-white/80 uppercase tracking-widest px-1">{t.breakfast}</div>
-                <MealSlot
-                    day={day}
-                    type="Breakfast"
-                    meal={getMeal('Breakfast')}
-                    onUpdate={onUpdateMeal}
-                />
+        <div className="glass-panel p-6 flex flex-col md:flex-row gap-6 items-start md:items-stretch">
+            {/* Day Header */}
+            <div className="w-full md:w-32 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center border-b md:border-b-0 md:border-r border-white/20 pb-4 md:pb-0 md:pr-6">
+                <h3 className="text-xl font-bold text-gray-800 tracking-wide">
+                    {displayDay}
+                </h3>
+                <span className="text-xs font-medium text-gray-500 bg-white/50 px-2 py-1 rounded-lg">
+                    {meals.length} meals
+                </span>
+            </div>
 
-                <div className="text-[10px] font-bold text-white/80 uppercase tracking-widest px-1">{t.lunch}</div>
-                <MealSlot
-                    day={day}
-                    type="Lunch"
-                    meal={getMeal('Lunch')}
-                    onUpdate={onUpdateMeal}
-                />
+            {/* Meals Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                <div className="space-y-2">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.breakfast}</div>
+                    <MealSlot
+                        day={day}
+                        type="Breakfast"
+                        meal={getMeal('Breakfast')}
+                        onUpdate={onUpdateMeal}
+                    />
+                </div>
 
-                <div className="text-[10px] font-bold text-white/80 uppercase tracking-widest px-1">{t.dinner}</div>
-                <MealSlot
-                    day={day}
-                    type="Dinner"
-                    meal={getMeal('Dinner')}
-                    onUpdate={onUpdateMeal}
-                />
+                <div className="space-y-2">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.lunch}</div>
+                    <MealSlot
+                        day={day}
+                        type="Lunch"
+                        meal={getMeal('Lunch')}
+                        onUpdate={onUpdateMeal}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.dinner}</div>
+                    <MealSlot
+                        day={day}
+                        type="Dinner"
+                        meal={getMeal('Dinner')}
+                        onUpdate={onUpdateMeal}
+                    />
+                </div>
             </div>
         </div>
     );

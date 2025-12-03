@@ -9,7 +9,7 @@ export function MealProvider({ children }) {
     const [checkedIngredients, setCheckedIngredients] = useLocalStorage('smart-meal-planner-checked', {});
     const [favoriteRecipes, setFavoriteRecipes] = useLocalStorage('smart-meal-planner-recipes', []);
 
-    const updateMeal = (day, type, menuName, ingredients) => {
+    const updateMeal = (day, type, menuName, ingredients, recipe = '') => {
         setMeals(prevMeals => {
             const existingMealIndex = prevMeals.findIndex(m => m.day === day && m.type === type);
             const newMeal = {
@@ -17,7 +17,8 @@ export function MealProvider({ children }) {
                 day,
                 type,
                 menuName,
-                ingredients
+                ingredients,
+                recipe
             };
 
             if (existingMealIndex >= 0) {
@@ -42,8 +43,8 @@ export function MealProvider({ children }) {
         }));
     };
 
-    const addRecipe = (name, ingredients) => {
-        setFavoriteRecipes(prev => [...prev, { id: uuidv4(), name, ingredients }]);
+    const addRecipe = (name, ingredients, instructions = '') => {
+        setFavoriteRecipes(prev => [...prev, { id: uuidv4(), name, ingredients, instructions }]);
     };
 
     const removeRecipe = (id) => {

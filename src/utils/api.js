@@ -2,8 +2,8 @@
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-export async function generateIngredients(menuName, language = 'ko') {
-    if (!menuName) return [];
+export async function generateMealInfo(menuName, language = 'ko') {
+    if (!menuName) return null;
 
     const langInstruction = language === 'ko'
         ? 'Output MUST be in Korean.'
@@ -12,12 +12,22 @@ export async function generateIngredients(menuName, language = 'ko') {
     const prompt = `
     You are a helpful cooking assistant.
     The user will provide a menu name.
-    You must list the main ingredients required to cook this menu.
-    Return ONLY a JSON object with a single key "ingredients" which is an array of strings.
+    You must provide:
+    1. The main ingredients required to cook this menu.
+    2. A short, step-by-step recipe (cooking instructions).
+
+    Return ONLY a JSON object with two keys:
+    - "ingredients": an array of strings.
+    - "recipe": a string containing the cooking instructions (use \\n for line breaks).
+
     Do not include any markdown formatting or explanations.
     ${langInstruction}
+    
     Example input: "Kimchi Stew"
-    Example output: { "ingredients": ["Kimchi", "Pork", "Tofu", "Green Onion", "Onion"] }
+    Example output: { 
+        "ingredients": ["Kimchi", "Pork", "Tofu", "Green Onion", "Onion"],
+        "recipe": "1. Stir-fry pork and kimchi.\\n2. Add water and boil.\\n3. Add tofu and onions."
+    }
     
     Input: "${menuName}"
     `;
@@ -48,9 +58,12 @@ export async function generateIngredients(menuName, language = 'ko') {
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const result = JSON.parse(jsonStr);
 
-        return result.ingredients || [];
+        return {
+            ingredients: result.ingredients || [],
+            recipe: result.recipe || ''
+        };
     } catch (error) {
-        console.error("Failed to generate ingredients:", error);
-        return [];
+        console.error("Failed to generate meal info:", error);
+        return null;
     }
 }

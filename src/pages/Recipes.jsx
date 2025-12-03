@@ -7,13 +7,15 @@ export default function Recipes() {
     const [isAdding, setIsAdding] = useState(false);
     const [newName, setNewName] = useState('');
     const [newIngredients, setNewIngredients] = useState('');
+    const [newInstructions, setNewInstructions] = useState('');
 
     const handleAdd = () => {
         if (!newName.trim()) return;
         const ingredients = newIngredients.split(',').map(i => i.trim()).filter(i => i);
-        addRecipe(newName, ingredients);
+        addRecipe(newName, ingredients, newInstructions);
         setNewName('');
         setNewIngredients('');
+        setNewInstructions('');
         setIsAdding(false);
     };
 
@@ -49,6 +51,12 @@ export default function Recipes() {
                             value={newIngredients}
                             onChange={(e) => setNewIngredients(e.target.value)}
                         />
+                        <textarea
+                            placeholder="Cooking Instructions..."
+                            className="w-full p-3 rounded-xl glass-input min-h-[100px] resize-none"
+                            value={newInstructions}
+                            onChange={(e) => setNewInstructions(e.target.value)}
+                        />
                     </div>
                     <div className="flex justify-end gap-3">
                         <button
@@ -75,21 +83,30 @@ export default function Recipes() {
                 )}
 
                 {favoriteRecipes.map(recipe => (
-                    <div key={recipe.id} className="glass-card p-5 rounded-2xl relative group">
+                    <div key={recipe.id} className="glass-card p-5 rounded-2xl relative group flex flex-col gap-4">
                         <button
                             onClick={() => removeRecipe(recipe.id)}
                             className="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             <Trash2 size={18} />
                         </button>
-                        <h3 className="font-bold text-lg text-gray-800 mb-2">{recipe.name}</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {recipe.ingredients.map((ing, idx) => (
-                                <span key={idx} className="text-xs bg-white/60 px-2 py-1 rounded-md text-gray-600">
-                                    {ing}
-                                </span>
-                            ))}
+
+                        <div>
+                            <h3 className="font-bold text-lg text-gray-800 mb-2">{recipe.name}</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {recipe.ingredients.map((ing, idx) => (
+                                    <span key={idx} className="text-xs bg-white/60 px-2 py-1 rounded-md text-gray-600">
+                                        {ing}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
+
+                        {recipe.instructions && (
+                            <div className="text-sm text-gray-600 bg-white/30 p-3 rounded-xl whitespace-pre-wrap">
+                                {recipe.instructions}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
