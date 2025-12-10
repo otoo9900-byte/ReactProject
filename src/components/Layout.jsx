@@ -1,6 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Calendar, ShoppingCart, BookOpen } from 'lucide-react';
 import { useMeals } from '../context/MealContext';
+import DebugConsole from './DebugConsole';
 
 export default function Layout() {
     const { language, toggleLanguage } = useMeals();
@@ -75,10 +76,12 @@ export default function Layout() {
 
             {/* Main Content */}
             <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8 overflow-y-auto">
-                <div className="max-w-5xl mx-auto">
+                <div className="max-w-7xl mx-auto">
                     <Outlet />
                 </div>
             </main>
+
+            <DebugConsole />
         </div>
     );
 }

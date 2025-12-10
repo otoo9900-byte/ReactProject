@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateMealInfo } from '../utils/api';
+import { getFoodImageUrl } from '../utils/image';
 import { useMeals } from '../context/MealContext';
 
 export default function MealSlot({ day, type, meal, onUpdate }) {
@@ -8,11 +9,30 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
     const [menuName, setMenuName] = useState(meal?.menuName || '');
     const [ingredients, setIngredients] = useState(meal?.ingredients?.join(', ') || '');
     const [recipe, setRecipe] = useState(meal?.recipe || '');
+    const [imageKeywords, setImageKeywords] = useState(meal?.imageKeywords || '');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [imageUrl, setImageUrl] = useState(null);
+
+    // Fetch image when meal changes
+    useEffect(() => {
+        let isMounted = true;
+        const fetchImage = async () => {
+            if (meal && (meal.imageKeywords || meal.menuName)) {
+                const query = meal.imageKeywords || meal.menuName;
+                const url = await getFoodImageUrl(query);
+                if (isMounted) setImageUrl(url);
+            } else {
+                if (isMounted) setImageUrl(null);
+            }
+        };
+        fetchImage();
+        return () => { isMounted = false; };
+    }, [meal]);
 
     const handleSave = async () => {
         let ingredientList = ingredients.split(',').map(i => i.trim()).filter(i => i);
         let currentRecipe = recipe;
+        let currentImageKeywords = imageKeywords;
 
         // AI Generation Trigger: Menu name exists but ingredients are empty
         if (menuName && ingredientList.length === 0) {
@@ -28,6 +48,10 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
                         currentRecipe = generated.recipe;
                         setRecipe(generated.recipe);
                     }
+                    if (generated.imageKeywords) {
+                        currentImageKeywords = generated.imageKeywords;
+                        setImageKeywords(generated.imageKeywords);
+                    }
                 }
             } catch (error) {
                 console.error("AI generation failed", error);
@@ -36,7 +60,7 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
             }
         }
 
-        onUpdate(day, type, menuName, ingredientList, currentRecipe);
+        onUpdate(day, type, menuName, ingredientList, currentRecipe, currentImageKeywords);
 
         // Auto-save to Recipe List if we have a menu name and recipe
         if (menuName && currentRecipe) {
@@ -116,20 +140,50 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
     return (
         <div
             onClick={() => setIsEditing(true)}
-            className="p-3 rounded-xl min-h-[100px] cursor-pointer glass-card flex flex-col justify-center"
+            className={`p-3 rounded-xl h-[160px] cursor-pointer glass-card flex flex-col relative overflow-hidden group transition-all hover:shadow-md ${!meal ? 'hover:bg-white/40 justify-center' : 'justify-between'}`}
         >
-            {meal ? (
+            {imageUrl && (
                 <>
-                    <div className="font-bold text-gray-800 text-sm mb-1">{meal.menuName}</div>
-                    <div className="text-xs text-gray-600 truncate opacity-80">
-                        {meal.ingredients.join(', ')}
-                    </div>
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                        style={{ backgroundImage: `url('${imageUrl}')` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
                 </>
-            ) : (
-                <div className="text-2xl text-white/50 flex items-center justify-center h-full hover:text-white/80 transition-colors">
-                    +
-                </div>
             )}
+
+            <div className="relative z-10 w-full h-full flex flex-col">
+                {meal ? (
+                    <>
+                        <div className={`font-bold text-sm mb-1 line-clamp-2 ${imageUrl ? 'text-white text-shadow-sm' : 'text-gray-800'}`}>
+                            {meal.menuName}
+                        </div>
+
+                        <div className="flex-1" /> {/* Spacer to push ingredients to bottom */}
+
+                        {/* Updated Ingredient Layout: Flex wrap with badges */}
+                        <div className="flex flex-wrap gap-1 content-end">
+                            {meal.ingredients.slice(0, 6).map((ing, idx) => (
+                                <span
+                                    key={idx}
+                                    className={`text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm ${imageUrl ? 'bg-black/40 text-white/90 border border-white/10' : 'bg-white/60 text-gray-700 border border-gray-100'}`}
+                                >
+                                    {ing}
+                                </span>
+                            ))}
+                            {meal.ingredients.length > 6 && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full backdrop-blur-sm ${imageUrl ? 'bg-black/40 text-white/90' : 'bg-white/60 text-gray-700'}`}>
+                                    +{meal.ingredients.length - 6}
+                                </span>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-2xl text-gray-400/50 flex items-center justify-center h-full w-full group-hover:text-gray-500/80 transition-colors">
+                        +
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
