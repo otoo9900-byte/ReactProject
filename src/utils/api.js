@@ -10,26 +10,17 @@ export async function generateMealInfo(menuName, language = 'ko') {
         : 'Output MUST be in English.';
 
     const prompt = `
-    You are a helpful cooking assistant.
-    The user will provide a menu name.
-    You must provide:
-    1. The main ingredients required to cook this menu.
-    2. A short, step-by-step recipe (cooking instructions).
-
-    Return ONLY a JSON object with two keys:
-    - "ingredients": an array of strings.
-    - "recipe": a string containing the cooking instructions (use \\n for line breaks).
-
-    Do not include any markdown formatting or explanations.
-    ${langInstruction}
+    Role: Cooking Assistant.
+    Task: Provide ingredients, recipe, and English keywords for image search for the menu "${menuName}".
     
-    Example input: "Kimchi Stew"
-    Example output: { 
-        "ingredients": ["Kimchi", "Pork", "Tofu", "Green Onion", "Onion"],
-        "recipe": "1. Stir-fry pork and kimchi.\\n2. Add water and boil.\\n3. Add tofu and onions."
+    Output JSON ONLY:
+    {
+        "ingredients": ["List", "of", "ingredients"],
+        "recipe": "Short step-by-step instructions.",
+        "imageKeywords": "English name of the dish for image search (e.g., 'Kimchi Fried Rice')"
     }
     
-    Input: "${menuName}"
+    ${langInstruction}
     `;
 
     try {
@@ -43,7 +34,11 @@ export async function generateMealInfo(menuName, language = 'ko') {
                     parts: [{
                         text: prompt
                     }]
-                }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 500,
+                }
             })
         });
 
@@ -60,7 +55,8 @@ export async function generateMealInfo(menuName, language = 'ko') {
 
         return {
             ingredients: result.ingredients || [],
-            recipe: result.recipe || ''
+            recipe: result.recipe || '',
+            imageKeywords: result.imageKeywords || ''
         };
     } catch (error) {
         console.error("Failed to generate meal info:", error);
