@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { normalizeIngredients } from '../utils/api';
 
 const MealContext = createContext();
 
@@ -8,8 +9,10 @@ export function MealProvider({ children }) {
     const [meals, setMeals] = useLocalStorage('smart-meal-planner-meals', []);
     const [checkedIngredients, setCheckedIngredients] = useLocalStorage('smart-meal-planner-checked', {});
     const [favoriteRecipes, setFavoriteRecipes] = useLocalStorage('smart-meal-planner-recipes', []);
+    const [smartIngredients, setSmartIngredients] = useLocalStorage('smart-meal-planner-smart-list', null);
+    const [isMerging, setIsMerging] = useState(false);
 
-    const updateMeal = (day, type, menuName, ingredients, recipe = '') => {
+    const updateMeal = (day, type, menuName, ingredients, recipe = '', imageKeywords = '') => {
         setMeals(prevMeals => {
             const existingMealIndex = prevMeals.findIndex(m => m.day === day && m.type === type);
             const newMeal = {
@@ -18,7 +21,8 @@ export function MealProvider({ children }) {
                 type,
                 menuName,
                 ingredients,
-                recipe
+                recipe,
+                imageKeywords
             };
 
             if (existingMealIndex >= 0) {
@@ -80,6 +84,34 @@ export function MealProvider({ children }) {
         setLanguage(prev => prev === 'ko' ? 'en' : 'ko');
     };
 
+    const mergeIngredients = async () => {
+        if (aggregatedIngredients.length === 0) return;
+
+        setIsMerging(true);
+        try {
+            const rawNames = aggregatedIngredients.map(i => i.name);
+            const normalized = await normalizeIngredients(rawNames);
+
+            // Convert strings to ingredient objects
+            // We assume count is 1 for merged items as the quantity is likely embedded in the name now
+            const smartList = normalized.map(name => ({
+                name,
+                count: 1,
+                checked: !!checkedIngredients[name] // Try to preserve checked state if name matches exactly
+            }));
+
+            setSmartIngredients(smartList);
+        } catch (error) {
+            console.error("Failed to merge ingredients:", error);
+        } finally {
+            setIsMerging(false);
+        }
+    };
+
+    const resetSmartList = () => {
+        setSmartIngredients(null);
+    };
+
     const value = {
         meals,
         updateMeal,
@@ -89,7 +121,12 @@ export function MealProvider({ children }) {
         addRecipe,
         removeRecipe,
         language,
-        toggleLanguage
+        language,
+        toggleLanguage,
+        smartIngredients,
+        isMerging,
+        mergeIngredients,
+        resetSmartList
     };
 
     return (

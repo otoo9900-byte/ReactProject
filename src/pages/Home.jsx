@@ -1,75 +1,161 @@
+import { useState, useEffect } from 'react';
 import { useMeals } from '../context/MealContext';
 import { Link } from 'react-router-dom';
+import { getFoodImageUrl } from '../utils/image';
+
+// Helper component to load image asynchronously
+const MealImage = ({ meal }) => {
+    const [imageUrl, setImageUrl] = useState(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchImage = async () => {
+            if (meal && (meal.imageKeywords || meal.menuName)) {
+                const query = meal.imageKeywords || meal.menuName;
+                const url = await getFoodImageUrl(query);
+                if (isMounted) setImageUrl(url);
+            } else {
+                if (isMounted) setImageUrl(null);
+            }
+        };
+        fetchImage();
+        return () => { isMounted = false; };
+    }, [meal]);
+
+    if (!imageUrl) return null;
+
+    return (
+        <>
+            <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url('${imageUrl}')` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        </>
+    );
+};
 
 export default function Home() {
     const { meals, aggregatedIngredients } = useMeals();
 
+    // Get real day of the week (e.g., "Monday", "Tuesday")
     const displayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
     const todaysMeals = meals?.filter(m => m.day === displayDay) || [];
     const unpurchasedCount = aggregatedIngredients?.filter(i => !i.checked).length || 0;
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in pb-12">
             <header className="space-y-2">
-                <h1 className="text-3xl font-bold text-gray-800">
+                <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">
                     👋 Good Morning!
                 </h1>
-                <p className="text-gray-600">
-                    Here's your summary for <span className="font-semibold text-blue-600">{displayDay}</span>.
+                <p className="text-lg text-gray-600">
+                    Here's your summary for <span className="font-bold text-blue-600">{displayDay}</span>.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Today's Menu Card */}
-                <div className="glass-panel p-6 rounded-2xl">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-800">🍽️ Today's Menu</h2>
-                        <Link to="/planner" className="text-sm text-blue-500 hover:underline">Edit Plan</Link>
-                    </div>
+            {/* Today's Menu Section - Full Width, 3 Columns */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-end">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        🍽️ Today's Menu
+                    </h2>
+                    <Link to="/planner" className="text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors">
+                        Edit Plan →
+                    </Link>
+                </div>
 
-                    <div className="space-y-4">
-                        {['Breakfast', 'Lunch', 'Dinner'].map(type => {
-                            const meal = todaysMeals.find(m => m.type === type);
-                            return (
-                                <div key={type} className="flex items-center gap-4 p-3 rounded-xl bg-white/40 border border-white/50">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg">
-                                        {type === 'Breakfast' ? '🍳' : type === 'Lunch' ? '🍱' : '🥗'}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {['Breakfast', 'Lunch', 'Dinner'].map(type => {
+                        const meal = todaysMeals.find(m => m.type === type);
+
+                        return (
+                            <div key={type} className="group relative flex flex-col h-[500px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300">
+                                {/* Image Section (Fixed Height) */}
+                                <div className="relative h-[240px] shrink-0 overflow-hidden bg-gray-100">
+                                    <MealImage meal={meal} />
+
+                                    {/* Type Badge */}
+                                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs font-bold text-gray-700 shadow-sm z-10">
+                                        {type}
                                     </div>
-                                    <div>
-                                        <div className="text-xs font-bold text-gray-500 uppercase">{type}</div>
-                                        <div className="font-medium text-gray-800">
-                                            {meal ? meal.menuName : <span className="text-gray-400 italic">Not planned</span>}
+
+                                    {/* Menu Name Overlay */}
+                                    <div className="absolute bottom-0 left-0 w-full p-4 text-white z-10">
+                                        <div className="font-bold text-xl text-shadow-sm truncate">
+                                            {meal ? meal.menuName : <span className="opacity-70 italic">Not planned</span>}
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })}
+
+                                {/* Content Section (Flexible) */}
+                                <div className="flex-1 p-5 bg-white flex flex-col overflow-hidden">
+                                    {meal ? (
+                                        <>
+                                            <div className="flex flex-wrap gap-1 mb-3 shrink-0">
+                                                {meal.ingredients.slice(0, 4).map((ing, idx) => (
+                                                    <span key={idx} className="text-[10px] px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-medium">
+                                                        {ing}
+                                                    </span>
+                                                ))}
+                                                {meal.ingredients.length > 4 && (
+                                                    <span className="text-[10px] px-2 py-1 rounded-md bg-gray-100 text-gray-500 font-medium">
+                                                        +{meal.ingredients.length - 4}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                                <h4 className="text-xs font-bold text-gray-400 uppercase mb-1 sticky top-0 bg-white">Recipe</h4>
+                                                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                                                    {meal.recipe || "No recipe available."}
+                                                </p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex-1 flex items-center justify-center text-gray-300">
+                                            <div className="text-center">
+                                                <div className="text-4xl mb-2">🥣</div>
+                                                <p className="text-sm">No meal planned</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* Shopping Status Section - Bottom */}
+            <section className="glass-panel p-8 rounded-3xl border border-white/50 shadow-lg">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-4xl text-blue-500">
+                            🛒
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Shopping Status</h2>
+                            <p className="text-gray-500">Keep your fridge stocked!</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-8 flex-1 justify-center md:justify-end">
+                        <div className="text-center">
+                            <div className="text-4xl font-extrabold text-blue-600 mb-1">{unpurchasedCount}</div>
+                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Items Needed</div>
+                        </div>
+                        <div className="h-12 w-px bg-gray-200 hidden md:block"></div>
+                        <Link
+                            to="/shopping"
+                            className="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-blue-500/40 transition-all transform hover:-translate-y-0.5"
+                        >
+                            View Shopping List
+                        </Link>
                     </div>
                 </div>
-
-                {/* Shopping Alert Card */}
-                <div className="glass-panel p-6 rounded-2xl">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-800">🛒 Shopping Status</h2>
-                        <Link to="/shopping" className="text-sm text-blue-500 hover:underline">View List</Link>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center h-48 text-center space-y-2">
-                        <div className="text-5xl font-bold text-blue-600">
-                            {unpurchasedCount}
-                        </div>
-                        <div className="text-gray-600 font-medium">
-                            Items left to buy
-                        </div>
-                        <p className="text-sm text-gray-500 max-w-[200px]">
-                            {unpurchasedCount > 0
-                                ? "Don't forget to stop by the grocery store!"
-                                : "You're all set! Fridge is stocked."}
-                        </p>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
     );
 }
