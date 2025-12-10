@@ -4,10 +4,7 @@ import { Link } from 'react-router-dom';
 export default function Home() {
     const { meals, aggregatedIngredients } = useMeals();
 
-    // Simple logic to get "Today" (Mocking Monday for MVP demo purposes or using real day)
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-    // For demo consistency, let's default to 'Monday' if today isn't in our list or just show Monday's meals
-    const displayDay = 'Monday';
+    const displayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
     const todaysMeals = meals?.filter(m => m.day === displayDay) || [];
     const unpurchasedCount = aggregatedIngredients?.filter(i => !i.checked).length || 0;

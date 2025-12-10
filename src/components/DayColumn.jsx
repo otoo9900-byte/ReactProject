@@ -1,7 +1,7 @@
 import MealSlot from './MealSlot';
 import { useMeals } from '../context/MealContext';
 
-export default function DayColumn({ day, meals, onUpdateMeal }) {
+export default function DayColumn({ day, date, isToday, meals, onUpdateMeal }) {
     const { language } = useMeals();
     const getMeal = (type) => meals.find(m => m.type === type);
 
@@ -20,13 +20,20 @@ export default function DayColumn({ day, meals, onUpdateMeal }) {
     const displayDay = language === 'ko' ? dayMap[day] : day;
 
     return (
-        <div className="glass-panel p-6 flex flex-col md:flex-row gap-6 items-start md:items-stretch">
+        <div className={`glass-panel p-6 flex flex-col md:flex-row gap-6 items-start md:items-stretch transition-colors duration-300 ${isToday ? 'ring-2 ring-blue-500/50 bg-blue-50/30' : ''}`}>
             {/* Day Header */}
             <div className="w-full md:w-32 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center border-b md:border-b-0 md:border-r border-white/20 pb-4 md:pb-0 md:pr-6">
-                <h3 className="text-xl font-bold text-gray-800 tracking-wide">
-                    {displayDay}
-                </h3>
-                <span className="text-xs font-medium text-gray-500 bg-white/50 px-2 py-1 rounded-lg">
+                <div className="flex flex-col">
+                    <h3 className={`text-xl font-bold tracking-wide ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
+                        {displayDay}
+                    </h3>
+                    {date && (
+                        <span className="text-sm font-medium text-gray-400">
+                            {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: 'numeric', day: 'numeric' })}
+                        </span>
+                    )}
+                </div>
+                <span className="text-xs font-medium text-gray-500 bg-white/50 px-2 py-1 rounded-lg md:mt-2">
                     {meals.length} meals
                 </span>
             </div>
