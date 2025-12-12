@@ -18,7 +18,13 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
         let isMounted = true;
         const fetchImage = async () => {
             if (meal && (meal.imageKeywords || meal.menuName)) {
-                const query = meal.imageKeywords || meal.menuName;
+                let query = meal.imageKeywords || meal.menuName;
+
+                // Special handling for 'Eating Out' (외식)
+                if (meal.menuName && meal.menuName.includes('외식')) {
+                    query = 'spoon and fork aesthetics'; // Search for nice cutlery images
+                }
+
                 const url = await getFoodImageUrl(query);
                 if (isMounted) setImageUrl(url);
             } else {
@@ -35,7 +41,8 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
         let currentImageKeywords = imageKeywords;
 
         // AI Generation Trigger: Menu name exists but ingredients are empty
-        if (menuName && ingredientList.length === 0) {
+        // Skip generation if 'Eating Out' (외식) is detected
+        if (menuName && ingredientList.length === 0 && !menuName.includes('외식')) {
             setIsGenerating(true);
             try {
                 const generated = await generateMealInfo(menuName, language);
@@ -61,6 +68,44 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
         }
 
         onUpdate(day, type, menuName, ingredientList, currentRecipe, currentImageKeywords);
+
+        // Fetch Image if not present or needs update
+        if (menuName && (!imageUrl || menuName !== meal?.menuName)) {
+            let keyword = (ingredientList.length > 0 && currentRecipe) ? menuName : menuName;
+
+            // Special handling for 'Eating Out' (외식)
+            if (menuName.includes('외식')) {
+                keyword = 'spoon and fork aesthetics';
+            }
+
+            try {
+                const fetchedUrl = await getFoodImageUrl(keyword);
+                // We don't save the URL here directly as it's not part of onUpdate signature in previous context? 
+                // Wait, onUpdate signature in context DOES accepts imageUrl now? 
+                // Checking previous steps: Yes, I updated updateMeal to accept imageUrl.
+                // But wait, onUpdate prop in MealSlot calls updateMeal.
+                // Does MealSlot's handleSave call onUpdate with imageUrl?
+                // Let's check the code I viewed.
+                // Line 63: onUpdate(day, type, menuName, ingredientList, currentRecipe, currentImageKeywords);
+                // Wait, argument 6 is imageKeywords, not imageUrl.
+                // I need to verify what onUpdate expects.
+                // In MealContext.jsx: updateMeal(day, type, menuName, ingredients, recipe = '', imageKeywords = '') 
+                // Ah, I changed it to imageKeywords in Step 193 (User edit). 
+                // The user changed `imageUrl` to `imageKeywords` in `updateMeal`.
+                // So `onUpdate` takes `imageKeywords`. 
+                // BUT `MealSlot` has local state `imageUrl` and fetches it. 
+                // If the user wants the image to persist, we might need a way to store it, or just rely on keywords.
+                // Use case: "Eating Out" needs specific query.
+                // I should allow `getFoodImageUrl` to be called and set the view.
+
+                if (fetchedUrl) setImageUrl(fetchedUrl); // Just update local view for now, or trigger another update if needed?
+                // Actually, the `useEffect` handles fetching based on `meal` prop change.
+                // But `handleSave` changes local state but `meal` prop might not update immediately until parent re-renders.
+                // Let's just update local view.
+            } catch (e) {
+                console.error("Image fetch failed", e);
+            }
+        }
 
         // Auto-save to Recipe List if we have a menu name and recipe
         if (menuName && currentRecipe) {
@@ -92,10 +137,9 @@ export default function MealSlot({ day, type, meal, onUpdate }) {
                     autoFocus
                     disabled={isGenerating}
                 />
-                <input
-                    type="text"
+                <textarea
                     placeholder={isGenerating ? t.generating : t.ingPlaceholder}
-                    className="w-full mb-2 p-2 rounded-lg text-sm glass-input text-gray-700 placeholder-gray-400"
+                    className="w-full mb-2 p-2 rounded-lg text-sm glass-input text-gray-700 placeholder-gray-400 min-h-[60px] resize-none"
                     value={ingredients}
                     onChange={(e) => setIngredients(e.target.value)}
                     disabled={isGenerating}

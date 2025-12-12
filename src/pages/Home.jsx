@@ -11,7 +11,13 @@ const MealImage = ({ meal }) => {
         let isMounted = true;
         const fetchImage = async () => {
             if (meal && (meal.imageKeywords || meal.menuName)) {
-                const query = meal.imageKeywords || meal.menuName;
+                let query = meal.imageKeywords || meal.menuName;
+
+                // Special handling for 'Eating Out' (외식)
+                if (meal.menuName && meal.menuName.includes('외식')) {
+                    query = 'spoon and fork aesthetics';
+                }
+
                 const url = await getFoodImageUrl(query);
                 if (isMounted) setImageUrl(url);
             } else {
@@ -43,6 +49,10 @@ export default function Home() {
 
     const todaysMeals = meals?.filter(m => m.day === displayDay) || [];
     const unpurchasedCount = aggregatedIngredients?.filter(i => !i.checked).length || 0;
+
+    const [selectedMealForIngredients, setSelectedMealForIngredients] = useState(null);
+
+    const closeModal = () => setSelectedMealForIngredients(null);
 
     return (
         <div className="space-y-8 animate-fade-in pb-12">
@@ -100,7 +110,10 @@ export default function Home() {
                                                     </span>
                                                 ))}
                                                 {meal.ingredients.length > 4 && (
-                                                    <span className="text-[10px] px-2 py-1 rounded-md bg-gray-100 text-gray-500 font-medium">
+                                                    <span
+                                                        onClick={() => setSelectedMealForIngredients(meal)}
+                                                        className="text-[10px] px-2 py-1 rounded-md bg-blue-50 text-blue-600 font-bold cursor-pointer hover:bg-blue-100 transition-colors"
+                                                    >
                                                         +{meal.ingredients.length - 4}
                                                     </span>
                                                 )}
@@ -125,6 +138,42 @@ export default function Home() {
                             </div>
                         );
                     })}
+                </div>
+            </section>
+
+            {/* Today's Ingredients Section */}
+            <section className="glass-panel p-8 rounded-3xl border border-white/50 shadow-lg">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-2xl">
+                        🥕
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800">Today's Ingredients</h2>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {(() => {
+                        const allIngredients = todaysMeals.flatMap(m => m.ingredients || []);
+                        const ingredientCounts = allIngredients.reduce((acc, ing) => {
+                            const normalized = ing.trim();
+                            acc[normalized] = (acc[normalized] || 0) + 1;
+                            return acc;
+                        }, {});
+
+                        if (Object.keys(ingredientCounts).length === 0) {
+                            return <p className="text-gray-500 italic">No ingredients needed for today.</p>;
+                        }
+
+                        return Object.entries(ingredientCounts).map(([name, count], idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/60 border border-gray-200 shadow-sm text-sm font-medium text-gray-700">
+                                <span>{name}</span>
+                                {count > 1 && (
+                                    <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 rounded-md">
+                                        x{count}
+                                    </span>
+                                )}
+                            </div>
+                        ));
+                    })()}
                 </div>
             </section>
 
@@ -156,6 +205,47 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+            {/* Ingredient Expansion Modal */}
+            {selectedMealForIngredients && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+                    onClick={closeModal}
+                >
+                    <div
+                        className="bg-[#fef9c3] w-full max-w-sm rounded-lg shadow-2xl overflow-hidden transform transition-all scale-100 rotate-1 border-2 border-gray-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header looking like tape or header */}
+                        <div className="bg-[#fde047] p-4 border-b border-yellow-300 flex justify-between items-center">
+                            <h3 className="font-bold text-yellow-900 text-lg">
+                                📝 {selectedMealForIngredients.menuName} Ingredients
+                            </h3>
+                            <button
+                                onClick={closeModal}
+                                className="text-yellow-800 hover:text-yellow-950 font-bold text-xl"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {/* Content looking like ruled paper */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[linear-gradient(#e5e7eb_1px,transparent_1px)] bg-[length:100%_2rem]">
+                            <ul className="space-y-4 list-disc pl-5 marker:text-yellow-600">
+                                {selectedMealForIngredients.ingredients.map((ing, idx) => (
+                                    <li key={idx} className="text-gray-800 font-medium text-lg leading-8 -mt-2">
+                                        {ing}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="bg-[#fef9c3] p-3 text-center text-xs text-yellow-700 italic border-t border-yellow-200">
+                            Click outside to close
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
