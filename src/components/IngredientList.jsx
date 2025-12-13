@@ -10,7 +10,7 @@ export default function IngredientList({ ingredients, onToggleCheck }) {
 
     if (ingredients.length === 0) {
         return (
-            <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <div className="text-center text-theme-secondary py-8 glass-panel rounded-lg border border-dashed border-white/30">
                 {t.empty}
             </div>
         );
@@ -18,7 +18,7 @@ export default function IngredientList({ ingredients, onToggleCheck }) {
 
     return (
         <div className="glass-panel rounded-2xl p-8">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
+            <h2 className="text-2xl font-bold mb-6 text-theme-primary flex items-center gap-3">
                 🛒 {t.title}
                 <span className="text-sm font-bold text-blue-600 bg-white/50 px-3 py-1 rounded-full shadow-sm">
                     {ingredients.length} {t.items}
@@ -32,7 +32,7 @@ export default function IngredientList({ ingredients, onToggleCheck }) {
                         className={`
               flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border
               ${item.checked
-                                ? 'bg-gray-100/30 border-transparent opacity-50'
+                                ? 'bg-white/10 border-transparent opacity-50'
                                 : 'glass-card border-white/40 hover:border-white/80'
                             }
             `}
@@ -51,7 +51,7 @@ export default function IngredientList({ ingredients, onToggleCheck }) {
                                     </svg>
                                 )}
                             </div>
-                            <span className={`font-medium text-lg ${item.checked ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                            <span className={`font-medium text-lg ${item.checked ? 'line-through text-theme-secondary' : 'text-theme-primary'}`}>
                                 {item.name}
                             </span>
                         </div>

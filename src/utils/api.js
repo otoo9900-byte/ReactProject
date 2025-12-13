@@ -18,14 +18,21 @@ export async function generateMealInfo(menuName, language = 'ko') {
     Role: Cooking Assistant.
     Task: Provide ingredients, recipe, and English keywords for image search for the menu "${menuName}".
     
-    Output JSON ONLY:
+    Input JSON ONLY:
     {
         "ingredients": ["List", "of", "ingredients"],
         "recipe": "Short step-by-step instructions.",
-        "imageKeywords": "English name of the dish for image search (e.g., 'Kimchi Fried Rice')"
+        "imageKeywords": "English name of the dish for image search (e.g., 'Kimchi Fried Rice')",
+        "nutrition": {
+            "calories": "e.g., 500kcal",
+            "carbs": "e.g., 60g",
+            "protein": "e.g., 20g",
+            "fat": "e.g., 15g"
+        }
     }
     
     ${langInstruction}
+    IMPORTANT: List ingredients in the requested language ONLY. Do NOT include translations in parentheses (e.g., use '오이', NOT '오이(Cucumber)').
     `;
 
     try {
@@ -42,7 +49,7 @@ export async function generateMealInfo(menuName, language = 'ko') {
                 }],
                 generationConfig: {
                     temperature: 0.7,
-                    maxOutputTokens: 2000,
+                    maxOutputTokens: 5000,
                 }
             })
         });
@@ -81,7 +88,8 @@ export async function generateMealInfo(menuName, language = 'ko') {
         return {
             ingredients: result.ingredients || [],
             recipe: result.recipe || '',
-            imageKeywords: result.imageKeywords || ''
+            imageKeywords: result.imageKeywords || '',
+            nutrition: result.nutrition || null
         };
     } catch (error) {
         console.error("Failed to generate meal info:", error);

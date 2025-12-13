@@ -1,7 +1,9 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { normalizeIngredients } from '../utils/api';
+import { t as translate } from '../constants/translations';
+import { THEMES } from '../constants/themes';
+import { useEffect } from 'react';
 
 const MealContext = createContext();
 
@@ -10,9 +12,11 @@ export function MealProvider({ children }) {
     const [checkedIngredients, setCheckedIngredients] = useLocalStorage('smart-meal-planner-checked', {});
     const [favoriteRecipes, setFavoriteRecipes] = useLocalStorage('smart-meal-planner-recipes', []);
     const [hiddenIngredients, setHiddenIngredients] = useLocalStorage('smart-meal-planner-hidden-ingredients', {});
+    const [language, setLanguage] = useLocalStorage('smart-meal-planner-language', 'ko');
+    const [currentTheme, setCurrentTheme] = useLocalStorage('smart-meal-planner-theme', 'default');
 
 
-    const updateMeal = (day, type, menuName, ingredients, recipe = '', imageKeywords = '') => {
+    const updateMeal = (day, type, menuName, ingredients, recipe = '', imageKeywords = '', nutrition = null, imageUrl = null) => {
         setMeals(prevMeals => {
             const existingMealIndex = prevMeals.findIndex(m => m.day === day && m.type === type);
             const newMeal = {
@@ -22,7 +26,9 @@ export function MealProvider({ children }) {
                 menuName,
                 ingredients,
                 recipe,
-                imageKeywords
+                imageKeywords,
+                nutrition,
+                imageUrl
             };
 
             if (existingMealIndex >= 0) {
@@ -40,6 +46,45 @@ export function MealProvider({ children }) {
         });
     };
 
+    const updateMealImage = (day, type, imageUrl) => {
+        setMeals(prevMeals => {
+            const existingMealIndex = prevMeals.findIndex(m => m.day === day && m.type === type);
+            if (existingMealIndex === -1) return prevMeals;
+
+            const newMeals = [...prevMeals];
+            newMeals[existingMealIndex] = { ...newMeals[existingMealIndex], imageUrl };
+            return newMeals;
+        });
+    };
+
+    const moveMeal = (mealId, targetDay, targetType) => {
+        setMeals(prevMeals => {
+            const sourceIndex = prevMeals.findIndex(m => m.id === mealId);
+            if (sourceIndex === -1) return prevMeals;
+
+            const targetIndex = prevMeals.findIndex(m => m.day === targetDay && m.type === targetType);
+            const sourceMeal = prevMeals[sourceIndex];
+
+            const newMeals = [...prevMeals];
+
+            if (targetIndex >= 0) {
+                // Swap logic
+                const targetMeal = prevMeals[targetIndex];
+
+                // Move target to source position
+                newMeals[sourceIndex] = { ...targetMeal, day: sourceMeal.day, type: sourceMeal.type };
+
+                // Move source to target position
+                newMeals[targetIndex] = { ...sourceMeal, day: targetDay, type: targetType };
+            } else {
+                // Move logic (target is empty)
+                newMeals[sourceIndex] = { ...sourceMeal, day: targetDay, type: targetType };
+            }
+
+            return newMeals;
+        });
+    };
+
     const toggleIngredientCheck = (name) => {
         setCheckedIngredients(prev => ({
             ...prev,
@@ -47,8 +92,18 @@ export function MealProvider({ children }) {
         }));
     };
 
-    const addRecipe = (name, ingredients, instructions = '') => {
-        setFavoriteRecipes(prev => [...prev, { id: uuidv4(), name, ingredients, instructions }]);
+    const addRecipe = (name, ingredients, instructions = '', imageKeywords = '', imageUrl = null) => {
+        setFavoriteRecipes(prev => {
+            const existingIndex = prev.findIndex(r => r.name === name);
+            if (existingIndex >= 0) {
+                // Update existing recipe
+                const updated = [...prev];
+                updated[existingIndex] = { ...updated[existingIndex], ingredients, instructions, imageKeywords, imageUrl };
+                return updated;
+            }
+            // Add new recipe
+            return [...prev, { id: uuidv4(), name, ingredients, instructions, imageKeywords, imageUrl }];
+        });
     };
 
     const removeRecipe = (id) => {
@@ -59,50 +114,74 @@ export function MealProvider({ children }) {
         const map = new Map();
 
         meals.forEach(meal => {
-            meal.ingredients.forEach(ing => {
-                let name = ing.trim();
-                if (!name) return;
+            meal.ingredients.forEach(rawIng => {
+                // Step 0: Split by comma to handle multiple ingredients in one slot
+                // separate "Onion, Garlic" into "Onion" and "Garlic"
+                const subIngredients = rawIng.split(',').map(s => s.trim()).filter(s => s);
 
-                // Automatic Cleaning Logic
-                // 1. Remove text inside parentheses (e.g., "Milk (low fat)")
-                name = name.replace(/\s*\([^)]*\)/g, '');
+                subIngredients.forEach(ing => {
+                    let name = ing.trim();
+                    if (!name) return;
 
-                // 2. Remove quantities at the end (e.g., "Soy Sauce 1 tbsp", "Onion 1", "Pork 300g")
-                // Matches space followed by digit(s) and any following characters to the end
-                name = name.replace(/\s+\d+.*$/, '');
+                    // Automatic Cleaning Logic
+                    // 1. Remove text inside parentheses (e.g., "Milk (low fat)")
+                    name = name.replace(/\s*\([^)]*\)/g, '');
 
-                // 3. Remove quantities at the start (e.g., "1 Egg", "1/2 Onion")
-                name = name.replace(/^\d+([./]\d+)?\s*/, '');
+                    // 2. Remove quantities at the end
+                    name = name.replace(/\s+\d+.*$/, '');
 
-                // 4. Remove standalone Korean counts if attached tightly (e.g., "계란2개" => "계란")
-                name = name.replace(/\d+[가-힣a-zA-Z]*$/, '');
+                    // 3. Remove quantities at the start
+                    name = name.replace(/^\d+([./]\d+)?\s*/, '');
 
-                // 5. Remove vague quantifiers (Korean)
-                // e.g., "후추 약간", "소금 조금", "깨 적당량"
-                name = name.replace(/\s+(약간|조금|적당량|한줌|한꼬집|취향껏|상당량|소량|다수).*$/, '');
+                    // 4. Remove standalone Korean counts
+                    name = name.replace(/\d+[가-힣a-zA-Z]*$/, '');
 
-                // 6. Synonym Normalization
-                const synonyms = {
-                    '달걀': '계란',
-                    'egg': '계란',
-                    'eggs': '계란',
-                    '파': '대파' // Optional: often people mean green onion when they say pa
-                };
-                if (synonyms[name]) {
-                    name = synonyms[name];
-                }
+                    // 5. Remove vague quantifiers
+                    name = name.replace(/\s+(약간|조금|적당량|한줌|한꼬집|취향껏|상당량|소량|다수).*$/, '');
 
-                name = name.trim();
-                if (!name) return;
+                    // 7. Alternative Handling (New request)
+                    // Pattern: "A 또는 B", "A or B", "A / B"
+                    // We treat these as alternatives, not separate items.
+                    const altRegex = /(?:^|\s)(?:또는|or|\/)(?:\s|$)/i;
+                    if (altRegex.test(name)) {
+                        const parts = name.split(altRegex).map(s => s.trim()).filter(s => s);
+                        if (parts.length > 1) {
+                            // Just use the primary ingredient, discard alternatives
+                            name = parts[0];
+                        }
+                    }
 
-                // Skip if hidden
-                if (hiddenIngredients[name]) return;
+                    // 6. Synonym Normalization (Apply to the whole string or just primary? Whole string is safer for now, or maybe just primary?)
+                    // If we formatted it, name is like "Beef (Alternative: Pork)". Synonyms won't match.
+                    // So we should probably apply synonyms BEFORE alternative formatting? 
+                    // Or apply to parts?
+                    // Let's keep synonyms simple for now. If it's a complex string, synonyms might not apply.
+                    // But if it was just "Egg", it falls through here.
 
-                if (map.has(name)) {
-                    map.set(name, map.get(name) + 1);
-                } else {
-                    map.set(name, 1);
-                }
+                    if (!name.includes('(')) { // Only apply simple synonyms if not already formatted
+                        const synonyms = {
+                            '달걀': '계란',
+                            'egg': '계란',
+                            'eggs': '계란',
+                            '파': '대파'
+                        };
+                        if (synonyms[name]) {
+                            name = synonyms[name];
+                        }
+                    }
+
+                    name = name.trim();
+                    if (!name) return;
+
+                    // Skip if hidden
+                    if (hiddenIngredients[name]) return;
+
+                    if (map.has(name)) {
+                        map.set(name, map.get(name) + 1);
+                    } else {
+                        map.set(name, 1);
+                    }
+                });
             });
         });
 
@@ -111,7 +190,7 @@ export function MealProvider({ children }) {
             count,
             checked: !!checkedIngredients[name]
         })).sort((a, b) => a.name.localeCompare(b.name));
-    }, [meals, checkedIngredients, hiddenIngredients]);
+    }, [meals, checkedIngredients, hiddenIngredients, language]);
 
     const deleteCheckedIngredients = () => {
         setHiddenIngredients(prev => {
@@ -137,11 +216,29 @@ export function MealProvider({ children }) {
         });
     };
 
-    const [language, setLanguage] = useLocalStorage('smart-meal-planner-language', 'ko');
+
+
+    // Apply theme variables
+    useEffect(() => {
+        const theme = THEMES[currentTheme] || THEMES.default;
+        const root = document.documentElement;
+
+        Object.entries(theme.colors).forEach(([key, value]) => {
+            root.style.setProperty(key, value);
+        });
+    }, [currentTheme]);
+
+    const changeTheme = (themeName) => {
+        if (THEMES[themeName]) {
+            setCurrentTheme(themeName);
+        }
+    };
 
     const toggleLanguage = () => {
         setLanguage(prev => prev === 'ko' ? 'en' : 'ko');
     };
+
+    const t = (key, params = {}) => translate(key, language, params);
 
 
 
@@ -154,10 +251,13 @@ export function MealProvider({ children }) {
         addRecipe,
         removeRecipe,
         language,
-        language,
         toggleLanguage,
-        deleteCheckedIngredients
-
+        t,
+        deleteCheckedIngredients,
+        currentTheme,
+        changeTheme,
+        moveMeal,
+        updateMealImage
     };
 
     return (

@@ -1,15 +1,16 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Calendar, ShoppingCart, BookOpen } from 'lucide-react';
+import { Home, Calendar, ShoppingCart, BookOpen, Settings } from 'lucide-react';
 import { useMeals } from '../context/MealContext';
 import DebugConsole from './DebugConsole';
 
 export default function Layout() {
-    const { language, toggleLanguage } = useMeals();
+    const { language, toggleLanguage, t } = useMeals();
     const navItems = [
-        { path: '/', icon: Home, label: language === 'ko' ? '홈' : 'Home' },
-        { path: '/planner', icon: Calendar, label: language === 'ko' ? '식단표' : 'Planner' },
-        { path: '/shopping', icon: ShoppingCart, label: language === 'ko' ? '장보기' : 'Shopping' },
-        { path: '/recipes', icon: BookOpen, label: language === 'ko' ? '레시피' : 'Recipes' },
+        { path: '/', icon: Home, label: t('nav_home') },
+        { path: '/planner', icon: Calendar, label: t('nav_planner') },
+        { path: '/shopping', icon: ShoppingCart, label: t('nav_shopping') },
+        { path: '/recipes', icon: BookOpen, label: t('nav_recipes') },
+        { path: '/settings', icon: Settings, label: t('nav_settings') },
     ];
 
     return (

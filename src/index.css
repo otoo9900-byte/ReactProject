@@ -7,8 +7,19 @@
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;
-  color: #4a5568;
-  /* Soft dark gray */
+
+  /* Default Theme Variables (fallback) */
+  --bg-gradient-start: #e0c3fc;
+  --bg-gradient-end: #8ec5fc;
+  --text-primary: #4a5568;
+  --text-secondary: #718096;
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --card-bg: rgba(255, 255, 255, 0.4);
+  --card-bg-hover: rgba(255, 255, 255, 0.6);
+  --accent-color: #3b82f6;
+  --accent-hover: #2563eb;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,43 +30,61 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* Pastel Gradient Background */
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   background-attachment: fixed;
+  transition: background 0.5s ease;
 }
 
 /* Glassmorphism Utility Class */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--card-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  color: var(--text-primary);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--card-bg-hover);
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(4px);
+  color: var(--text-primary);
 }
 
 .glass-input:focus {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card-bg-hover);
   outline: none;
-  border-color: #8ec5fc;
+  border-color: var(--accent-color);
+}
+
+/* Helper utilities for text */
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.placeholder-theme-secondary::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }

@@ -5,17 +5,19 @@ import Home from './pages/Home';
 import Planner from './pages/Planner';
 import Shopping from './pages/Shopping';
 import Recipes from './pages/Recipes';
+import Settings from './pages/Settings';
 
 function App() {
   return (
     <MealProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="planner" element={<Planner />} />
             <Route path="shopping" element={<Shopping />} />
             <Route path="recipes" element={<Recipes />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

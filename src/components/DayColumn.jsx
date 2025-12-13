@@ -24,16 +24,16 @@ export default function DayColumn({ day, date, isToday, meals, onUpdateMeal }) {
             {/* Day Header */}
             <div className="w-full md:w-32 shrink-0 flex md:flex-col items-center md:items-start justify-between md:justify-center border-b md:border-b-0 md:border-r border-white/20 pb-4 md:pb-0 md:pr-6">
                 <div className="flex flex-col">
-                    <h3 className={`text-xl font-bold tracking-wide ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
+                    <h3 className={`text-xl font-bold tracking-wide ${isToday ? 'text-blue-600' : 'text-theme-primary'}`}>
                         {displayDay}
                     </h3>
                     {date && (
-                        <span className="text-sm font-medium text-gray-400">
+                        <span className="text-sm font-medium text-theme-secondary">
                             {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: 'numeric', day: 'numeric' })}
                         </span>
                     )}
                 </div>
-                <span className="text-xs font-medium text-gray-500 bg-white/50 px-2 py-1 rounded-lg md:mt-2">
+                <span className="text-xs font-medium text-theme-secondary bg-white/20 px-2 py-1 rounded-lg md:mt-2">
                     {meals.length} meals
                 </span>
             </div>
@@ -41,7 +41,7 @@ export default function DayColumn({ day, date, isToday, meals, onUpdateMeal }) {
             {/* Meals Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
                 <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.breakfast}</div>
+                    <div className="text-[10px] font-bold text-theme-secondary uppercase tracking-widest px-1">{t.breakfast}</div>
                     <MealSlot
                         day={day}
                         type="Breakfast"
@@ -51,7 +51,7 @@ export default function DayColumn({ day, date, isToday, meals, onUpdateMeal }) {
                 </div>
 
                 <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.lunch}</div>
+                    <div className="text-[10px] font-bold text-theme-secondary uppercase tracking-widest px-1">{t.lunch}</div>
                     <MealSlot
                         day={day}
                         type="Lunch"
@@ -61,7 +61,7 @@ export default function DayColumn({ day, date, isToday, meals, onUpdateMeal }) {
                 </div>
 
                 <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">{t.dinner}</div>
+                    <div className="text-[10px] font-bold text-theme-secondary uppercase tracking-widest px-1">{t.dinner}</div>
                     <MealSlot
                         day={day}
                         type="Dinner"
