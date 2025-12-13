@@ -124,8 +124,11 @@ export function MealProvider({ children }) {
                     if (!name) return;
 
                     // Automatic Cleaning Logic
-                    // 1. Remove text inside parentheses (e.g., "Milk (low fat)")
-                    name = name.replace(/\s*\([^)]*\)/g, '');
+                    // 1. Remove text inside parentheses/brackets regardless of nesting or closure
+                    // Remove (...) and [...] and {...}
+                    name = name.replace(/(\(.*\)|\[.*\]|\{.*\})/g, '');
+                    // Also remove any remaining opening/closing brackets just in case
+                    name = name.replace(/[(){}[\]]/g, '');
 
                     // 2. Remove quantities at the end
                     name = name.replace(/\s+\d+.*$/, '');
@@ -136,8 +139,24 @@ export function MealProvider({ children }) {
                     // 4. Remove standalone Korean counts
                     name = name.replace(/\d+[가-힣a-zA-Z]*$/, '');
 
-                    // 5. Remove vague quantifiers
-                    name = name.replace(/\s+(약간|조금|적당량|한줌|한꼬집|취향껏|상당량|소량|다수).*$/, '');
+                    // 5. Remove vague quantifiers and common artifacts
+                    // Expanded list
+                    name = name.replace(/\s+(약간|조금|적당량|한줌|한꼬집|취향껏|상당량|소량|다수|선택사항|필수|권장|옵션).*$/, '');
+
+                    // Remove leading/trailing non-word chars (like .,- or whitespace)
+                    name = name.replace(/^[.,\-\s]+|[.,\-\s]+$/g, '');
+
+                    name = name.trim();
+                    if (!name) return;
+
+                    // Blocklist for non-ingredients that might slip through
+                    const blocklist = ['약간', '조금', '적당량', '취향껏', '선택사항', '또는', 'or', 'and', 'optional', '필수', '권장', '옵션', '준비', '재료', '소스', '양념'];
+                    if (blocklist.includes(name) || name.startsWith('선택사항')) return;
+
+                    // Filter out very short artifacts (length 1) that are not valid Korean chars
+                    // But keep things like '무', '파', '김', '밥' etc.
+                    // If it's 1 char and NOT a hangul char, maybe drop it? (e.g. 'a', '1', '.')
+                    if (name.length === 1 && !/[가-힣]/.test(name)) return;
 
                     // 7. Alternative Handling (New request)
                     // Pattern: "A 또는 B", "A or B", "A / B"

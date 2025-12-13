@@ -136,3 +136,66 @@ export async function normalizeIngredients(ingredients) {
         return ingredients; // Fallback to original list
     }
 }
+
+export async function analyzeWeeklyNutrition(meals, language = 'ko') {
+    if (!API_KEY || !meals || meals.length === 0) return null;
+
+    const langInstruction = language === 'ko'
+        ? 'Output MUST be in Korean.'
+        : 'Output MUST be in English.';
+
+    const mealList = meals.map(m => `- ${m.day} ${m.type}: ${m.menuName} (${m.ingredients.join(', ')})`).join('\n');
+
+    const prompt = `
+    Role: Professional Nutritionist.
+    Task: Analyze the following weekly meal plan and provide a brief nutritional assessment and specific advice.
+
+    Meal Plan:
+    ${mealList}
+
+    Output JSON ONLY:
+    {
+        "analysis": "Brief overall assessment (max 100 characters).",
+        "advice": ["Tip 1", "Tip 2", "Tip 3"]
+    }
+    
+    ${langInstruction}
+    Keep the advice practical, encouraging, and concise.
+    `;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1000,
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API call failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to analyze nutrition:", error);
+        return null;
+    }
+}
